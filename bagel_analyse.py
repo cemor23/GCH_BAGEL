@@ -65,7 +65,7 @@ plt.legend(["Valeur expérimentale", "Simulation"])
 plt.show()
 
 
-# # Graphique de la température simulé color map ------------------------------------------------------------------------------------------------
+# # Graphique de la température simulé color map -----------------------------------------------------------------------
 
 fig,ax = plt.subplots(nrows=1, ncols=1)
 ax.set_title(f"Profil de Température simulé en Kelvin (Cp = {prm.Cp}, k = {prm.k}, dt = {prm.dt}, nz = {prm.Nz})")
@@ -151,6 +151,7 @@ prm.Cp = round(float(res[:, 0][np.where(res[:, 2] == np.min(res[:, 2]))]), 4)
 prm.k = round(float(res[:, 1][np.where(res[:, 2] == np.min(res[:, 2]))]), 4)
 
 print(f"Pour l'objectif atteint avec {round(float(res[:, 2][np.where(res[:, 2] == np.min(res[:, 2]))])*100, 5)} % d'erreur, on peu utiliser un Cp de {prm.Cp} et un k de {prm.k}")
+
 
 # # Graphique de la température simulé à 3 min avec nouveau nz, dt, Cp et k --------------------------------------------
 
