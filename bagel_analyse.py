@@ -175,5 +175,3 @@ ax.set_ylabel("Position en z [m]")
 fig1 = ax.pcolormesh(t, z, T)
 plt.colorbar(fig1, ax=ax)
 plt.show()
-
-print("done")
