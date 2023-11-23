@@ -1,0 +1,2 @@
+Pour une stabilité à 0.04679 %, on peu utiliser un nz de 13 et un pas dt de 14
+Pour l'objectif atteint avec 5.37806 % d'erreur, on peu utiliser un Cp de 1400.0 et un k de 1.8292
