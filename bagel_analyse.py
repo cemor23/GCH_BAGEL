@@ -1,4 +1,5 @@
-# Importation des modules
+#%% Importation des modules --------------------------------------------------------------------------------------------
+
 import numpy as np
 import matplotlib.pyplot as plt
 try:
@@ -7,6 +8,8 @@ except Exception as e:
     print(e)
     pass
 
+
+#%% Init class ---------------------------------------------------------------------------------------------------------
 
 class Parametre:
     H = 42 / 1000  # [m] Hauteur de la pâte
@@ -24,12 +27,12 @@ class Parametre:
     t = [1 * 60, 3 * 60]  # [sec] Bornes temporels
 
 
-# # Paramètres
+#%% Paramètres ---------------------------------------------------------------------------------------------------------
 
 prm = Parametre()
 
 
-# # graph interpolation température 1 min ------------------------------------------------------------------------------
+#%% graph interpolation température 1 min ------------------------------------------------------------------------------
 
 z, t = position(prm)
 T_1min = interpolation_quad(z[:, 0], prm.T[0], prm)
@@ -42,7 +45,7 @@ plt.legend(["Valeurs expérimentales", "Interpolation"])
 plt.show()
 
 
-# # graph interpolation température 3 min (inutile) --------------------------------------------------------------------
+#%% graph interpolation température 3 min (inutile) --------------------------------------------------------------------
 
 # T_3min = interpolation_quad(z[:, 0], prm.T[1], prm)
 # plt.plot(prm.hz, prm.T[1], ".r")
@@ -53,7 +56,7 @@ plt.show()
 # plt.show()
 
 
-# # Graphique de la température simulé à 3 min -------------------------------------------------------------------------
+#%% Graphique de la température simulé à 3 min -------------------------------------------------------------------------
 
 T = mdf_assemblage(prm)
 plt.plot(prm.hz, prm.T[1], ".r")
@@ -65,7 +68,7 @@ plt.legend(["Valeur expérimentale", "Simulation"])
 plt.show()
 
 
-# # Graphique de la température simulé color map -----------------------------------------------------------------------
+#%% Graphique de la température simulé color map -----------------------------------------------------------------------
 
 fig,ax = plt.subplots(nrows=1, ncols=1)
 ax.set_title(f"Profil de Température simulé en Kelvin (Cp = {prm.Cp}, k = {prm.k}, dt = {prm.dt}, nz = {prm.Nz})")
@@ -76,17 +79,22 @@ plt.colorbar(fig1, ax=ax)
 plt.show()
 
 
-# # Stabilité (Trouver nz et dt)----------------------------------------------------------------------------------------
+#%% Stabilité (Trouver nz et dt)----------------------------------------------------------------------------------------
 
 stab_crit = 0.001
+detail = 50
 prm.Nz = 100
 prm.dt = 0.01
-T_ref = mdf_assemblage(prm)
-
 erreur = np.array([])
 nz_arr = np.array([])
 dt_arr = np.array([])
-detail = 100
+
+#%%
+
+T_ref = mdf_assemblage(prm)
+
+#%%
+
 for Nz in np.linspace(3, 100, detail)[:-1]:
     for dt in np.linspace(0.01, (prm.t[1]-prm.t[0])//2 , detail)[1:]:
         prm.Nz = int(Nz)
@@ -95,6 +103,8 @@ for Nz in np.linspace(3, 100, detail)[:-1]:
         erreur = np.append(erreur, (np.abs((T[:, -1][0] - T_ref[:, -1][0]) / (T_ref[:, -1][0] - 273.15))))
         nz_arr = np.append(nz_arr, int(Nz))
         dt_arr = np.append(dt_arr, dt)
+
+#%%
 
 ax = plt.figure().add_subplot(111, projection='3d')
 ax.bar3d(nz_arr, dt_arr, np.zeros_like(erreur), 1, 1, erreur*100)
@@ -130,7 +140,7 @@ prm.dt = int(dt_arr[np.where(erreur == erreur_crit[np.abs(erreur_crit - erreur_c
 print(f"Pour une stabilité à {round(erreur_crit[np.abs(erreur_crit - erreur_crit.mean()).argmin()]*100, 5)} %, on peu utiliser un nz de {prm.Nz} et un pas dt de {prm.dt}")
 
 
-# # trouver Cp et k ----------------------------------------------------------------------------------------------------
+#%% trouver Cp et k ----------------------------------------------------------------------------------------------------
 
 Cp = np.linspace(700, 1400, 25)
 k = np.linspace(0.8, 2.1, 25)
@@ -140,6 +150,8 @@ for i in Cp:
         prm.Cp = i
         prm.k = j
         res = np.append(res, np.array([i, j, f_obj(mdf_assemblage(prm), prm)]))
+
+#%%
 
 res = res.reshape(len(Cp)*len(k), 3)
 objectif = res[:, 2].reshape(len(Cp),len(k)).transpose()
@@ -157,7 +169,7 @@ prm.k = round(float(res[:, 1][np.where(res[:, 2] == np.min(res[:, 2]))]), 4)
 print(f"Pour l'objectif atteint avec {round(float(res[:, 2][np.where(res[:, 2] == np.min(res[:, 2]))])*100, 5)} % d'erreur, on peu utiliser un Cp de {prm.Cp} et un k de {prm.k}")
 
 
-# # Graphique de la température simulé à 3 min avec nouveau nz, dt, Cp et k --------------------------------------------
+#%% Graphique de la température simulé à 3 min avec nouveau nz, dt, Cp et k --------------------------------------------
 
 z, t = position(prm)
 T = mdf_assemblage(prm)
@@ -170,7 +182,7 @@ plt.legend(["Valeur expérimentale", "Simulation"])
 plt.show()
 
 
-# # Graphique de la température simulé color map avec nouveau nz, dt, Cp et k ------------------------------------------
+#%% Graphique de la température simulé color map avec nouveau nz, dt, Cp et k ------------------------------------------
 
 fig,ax = plt.subplots(nrows=1, ncols=1)
 ax.set_title(f"Profil de Température en Kelvin (Cp = {prm.Cp}, k = {prm.k}, dt = {prm.dt}, nz = {prm.Nz})")

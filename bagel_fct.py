@@ -139,4 +139,4 @@ def log_tick_formatter(val, pos=None):
     # return f"{10**val:.2e}"      # e-Notation
 
 def f_obj(T, prm):
-    return sum(abs((prm.T[1]-np.array((T[0, -1], T[len(T)//2, -1], T[-1, -1])))/prm.T[1]))
+    return sum(abs((prm.T[1]-np.array((T[-1, -1], T[len(T)//2, -1], T[0, -1])))/prm.T[1]))
