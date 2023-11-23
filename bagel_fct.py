@@ -1,12 +1,11 @@
 # Importation des modules
 import numpy as np
+from tqdm import tqdm
 
-def position(z_, t_, prm):
+def position(prm):
     """ Fonction générant deux matrices de discrétisation de l'espace
 
     Entrées:
-        - Z : Bornes du domaine en z, X = [z_min, z_max]
-        - T : Bornes du domaine en t, Y = [t_min, t_max]
         - prm : 
             H [m] Hauteur de la pâte
             rho [kg/m³] Masse volumique de la pâte
@@ -19,20 +18,23 @@ def position(z_, t_, prm):
             Ta [K] Température de l'air
             T [K] températures de la pâte au temps t=1min et t=3min
             hz [m] points de mesures
+            z [m] Bornes de la position en z
+            t [sec] Bornes temporels
 
     Sorties (dans l'ordre énuméré ci-bas):
         - z : Matrice (array) de dimension (Nz x Nt) qui contient la position en z
         - t : Matrice (array) de dimension (Nz x Nt) qui contient le temps en t
     """
-    Nt = int((t_[1]-t_[0])/(prm.dt))
+    Nt = int((prm.t[1]-prm.t[0])/(prm.dt))
+    Nz = int(prm.Nz)
     # Fonction à écrire
-    t = np.zeros((prm.Nz, Nt))
-    for i in range(prm.Nz):
-        t[i] = np.linspace(t_[0], t_[1], Nt)
+    t = np.zeros((Nz, Nt))
+    for i in range(Nz):
+        t[i] = np.linspace(prm.t[0], prm.t[1], Nt)
         
-    z = np.zeros((Nt, prm.Nz))
+    z = np.zeros((Nt, Nz))
     for i in range(Nt):
-        z[i] = np.linspace(z_[0], z_[1], prm.Nz)
+        z[i] = np.linspace(prm.z[0], prm.z[1], Nz)
     z = z.T
     return z, t
 
@@ -69,12 +71,10 @@ def interpolation_quad(z, T, prm):
     return T[0]*T_0 + T[1]*T_1 + T[2]*T_2
 
 
-def mdf_assemblage(z_, t_, prm):
+def mdf_assemblage(prm):
     """ Fonction assemblant la matrice A et le vecteur b
 
     Entrées:
-        - z_ : Bornes du domaine en z, X = [z_min, z_max]
-        - t_ : Bornes du domaine en t, Y = [t_min, t_max]
         - prm : 
             H [m] Hauteur de la pâte
             rho [kg/m³] Masse volumique de la pâte
@@ -87,16 +87,18 @@ def mdf_assemblage(z_, t_, prm):
             Ta [K] Température de l'air
             T [K] températures de la pâte au temps t=1min et t=3min
             hz [m] points de mesures
+            z [m] Bornes de la position en z
+            t [sec] Bornes temporels
 
     Sorties (dans l'ordre énuméré ci-bas):
         - A : Matrice (array)
         - b : Vecteur (array)
     """
     
-    z, t = position(z_, t_, prm)
-    Nz = prm.Nz
-    dz = (z_[1]-z_[0])/prm.Nz
-    Nt = int((t_[1]-t_[0])/(prm.dt))
+    z, t = position(prm)
+    Nz = int(prm.Nz)
+    dz = (prm.z[1]-prm.z[0])/Nz
+    Nt = int((prm.t[1]-prm.t[0])/(prm.dt))
     dt = prm.dt
     k = prm.k
     rho = prm.rho
@@ -132,5 +134,9 @@ def mdf_assemblage(z_, t_, prm):
     return T
 
 
-def stabilite(T, prm):
+def log_tick_formatter(val, pos=None):
+    return f"$10^{{{int(val)}}}$"  # remove int() if you don't use MaxNLocator
+    # return f"{10**val:.2e}"      # e-Notation
+
+def f_obj(T, prm):
     return sum(abs((prm.T[1]-np.array((T[0, -1], T[len(T)//2, -1], T[-1, -1])))/prm.T[1]))

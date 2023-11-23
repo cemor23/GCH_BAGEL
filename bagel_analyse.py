@@ -3,7 +3,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 try:
     from bagel_fct import *
-except:
+except Exception as e:
+    print(e)
     pass
 
 
@@ -19,91 +20,159 @@ class Parametre:
     Ta = 21.50 + 273.15  # [K] Température de l'air
     T = np.array(((27.92, 24.01, 23.12), (31.73, 25.19, 23.69))) + 273.15  # [K] températures de la pâte au temps t=1min et t=3min
     hz = np.array((0, H/2, H))  # [m] points de mesures
+    z = [H, 0]  # [m] Bornes de la position en z
+    t = [1 * 60, 3 * 60]  # [sec] Bornes temporels
 
 
 # # Paramètres
 
 prm = Parametre()
-z_ = [prm.H, 0]
-t_ = [1*60, 3*60]
-z, t = position(z_, t_, prm)
 
-# # graph interpolation température 1 min
 
+# # graph interpolation température 1 min ------------------------------------------------------------------------------
+
+z, t = position(prm)
 T_1min = interpolation_quad(z[:, 0], prm.T[0], prm)
 plt.plot(prm.hz, prm.T[0], ".r")
 plt.plot(z[:, 0], T_1min)
 plt.title("Interpolation de la température à 1 minute")
-plt.xlabel("hauteur z (m)")
-plt.ylabel("Température (K)")
+plt.xlabel("Position en z [m]")
+plt.ylabel("Température [K]")
+plt.legend(["Valeur expérimentale", "Interpolation"])
 plt.show()
 
-# # graph interpolation température 3 min
 
-T_3min = interpolation_quad(z[:, 0], prm.T[1], prm)
+# # graph interpolation température 3 min (inutile) --------------------------------------------------------------------
+
+# T_3min = interpolation_quad(z[:, 0], prm.T[1], prm)
+# plt.plot(prm.hz, prm.T[1], ".r")
+# plt.title("Interpolation de la température à 3 minutes")
+# plt.xlabel("hauteur z (m)")
+# plt.ylabel("Température (K)")
+# plt.plot(z[:, 0], T_3min)
+# plt.show()
+
+
+# # Graphique de la température simulé à 3 min -------------------------------------------------------------------------
+
+T = mdf_assemblage(prm)
 plt.plot(prm.hz, prm.T[1], ".r")
-plt.title("Interpolation de la température à 3 minutes")
-plt.xlabel("hauteur z (m)")
-plt.ylabel("Température (K)")
-plt.plot(z[:, 0], T_3min)
+plt.title(f"Température simulé de la pâte à 3 minutes (Cp = {prm.Cp}, k = {prm.k}, dt = {prm.dt}, nz = {prm.Nz})")
+plt.xlabel("Position en z [m]")
+plt.ylabel("Température [K]")
+plt.plot(z[:, 0], T[:, -1])
+plt.legend(["Valeur expérimentale", "Simulation"])
 plt.show()
 
-T = mdf_assemblage(z_, t_, prm)
 
-# # Graphique color map
+# # Graphique de la température simulé color map ------------------------------------------------------------------------------------------------
 
 fig,ax = plt.subplots(nrows=1, ncols=1)
-ax.set_title("Profile de Température (k = 0.8, Cp = 800) en Kelvin")
-ax.set_xlabel("Temps (sec)")
-ax.set_ylabel("Position en z (m)")
+ax.set_title(f"Profil de Température simulé en Kelvin (Cp = {prm.Cp}, k = {prm.k}, dt = {prm.dt}, nz = {prm.Nz})")
+ax.set_xlabel("Temps [sec]")
+ax.set_ylabel("Position en z [m]")
 fig1 = ax.pcolormesh(t, z, T)
 plt.colorbar(fig1, ax=ax)
 plt.show()
 
-# # Stabilité
-f_obj = stabilite(T, prm)
-print(f"f_obj = {f_obj}")
 
-T = mdf_assemblage(z_, t_, prm)
-f_obj = stabilite(T, prm)
-f_obj = []
-for i in range(3, 50):
-    for j in range(3, 50):
-        prm.Nz = i
-        prm.dt = (t_[1]-t_[0])/j
-        f_tmp = stabilite(mdf_assemblage(z_, t_, prm), prm)
-        f_obj.append([prm.Nz, prm.dt, f_tmp])
+# # Stabilité (Trouver nz et dt)----------------------------------------------------------------------------------------
 
-f_obj = np.array(f_obj)
-print(f"nz = %s, dt = %s, f_obj = %s" % tuple(f_obj[f_obj[:, 2]==min(f_obj[:, 2])][0]))
+stab_crit = 0.001
+prm.Nz = 100
+prm.dt = 0.01
+T_ref = mdf_assemblage(prm)
+
+erreur = np.array([])
+nz_arr = np.array([])
+dt_arr = np.array([])
+detail = 100
+for Nz in np.linspace(3, 100, detail)[:-1]:
+    for dt in np.linspace(0.01, (prm.t[1]-prm.t[0])//2 , detail)[1:]:
+        prm.Nz = int(Nz)
+        prm.dt = dt
+        T = mdf_assemblage(prm)
+        erreur = np.append(erreur, (np.abs((T[:, -1][0] - T_ref[:, -1][0]) / (T_ref[:, -1][0] - 273.15))))
+        nz_arr = np.append(nz_arr, int(Nz))
+        dt_arr = np.append(dt_arr, dt)
+
+ax = plt.figure().add_subplot(111, projection='3d')
+ax.bar3d(nz_arr, dt_arr, np.zeros_like(erreur), 1, 1, erreur*100)
+ax.set_yscale("symlog")
+ax.set_xscale("symlog")
+ax.set_title(f"Stabilité de la simulation (Cp = {prm.Cp}, k = {prm.k})")
+ax.set_xlabel("Nombre de points en z (nz)")
+ax.set_ylabel("Pas de temps (dt) [sec]")
+ax.set_zlabel("Stabilité [%]")
+plt.show()
+
+erreur = erreur.reshape(detail-1,detail-1).transpose()
+nz_arr = nz_arr.reshape(detail-1, detail-1).transpose()
+dt_arr = dt_arr.reshape(detail-1, detail-1).transpose()
+ax = plt.figure().add_subplot(111, projection='3d')
+ax.plot_surface(nz_arr, dt_arr, erreur, alpha=0.7)
+ax.set_yscale("symlog")
+ax.set_xscale("symlog")
+ax.set_title(f"Stabilité de la simulation (Cp = {prm.Cp}, k = {prm.k})")
+ax.set_xlabel("Nombre de points en z (nz)")
+ax.set_ylabel("Pas de temps (dt) [sec]")
+ax.set_zlabel("Stabilité [%]")
+plt.show()
+
+erreur_crit = erreur[np.less(erreur, stab_crit)]
+prm.Nz = int(nz_arr[np.where(erreur == erreur_crit[np.abs(erreur_crit - erreur_crit.mean()).argmin()])])
+prm.dt = int(dt_arr[np.where(erreur == erreur_crit[np.abs(erreur_crit - erreur_crit.mean()).argmin()])])
+
+print(f"Pour une stabilité à {round(erreur_crit[np.abs(erreur_crit - erreur_crit.mean()).argmin()]*100, 5)} %, on peu utiliser un nz de {prm.Nz} et un pas dt de {prm.dt}")
+
+
+# # trouver Cp et k ----------------------------------------------------------------------------------------------------
 
 Cp = np.linspace(700, 1400, 25)
 k = np.linspace(0.8, 2.1, 25)
-f_obj = np.array([])
-stabToCpk = {}
+res = np.array([])
 for i in Cp:
     for j in k:
         prm.Cp = i
         prm.k = j
-        f_obj = np.append(f_obj, stabilite(mdf_assemblage(z_, t_, prm), prm))
-        stabToCpk.update({stabilite(mdf_assemblage(z_, t_, prm), prm):(i, j)})
+        res = np.append(res, np.array([i, j, f_obj(mdf_assemblage(prm), prm)]))
 
-f_obj_reshaped = f_obj.reshape(len(Cp),len(k)).transpose()
+res = res.reshape(len(Cp)*len(k), 3)
+objectif = res[:, 2].reshape(len(Cp),len(k)).transpose()
 fig,ax = plt.subplots(nrows=1, ncols=1)
-ax.set_title("Profile de stabilité")
-ax.set_xlabel("Cp")
-ax.set_ylabel("k")
-fig1 = ax.pcolormesh(Cp, k, f_obj_reshaped)
+ax.set_title("Profil de la fonction-objectif")
+ax.set_xlabel("Cp [J/(kg K)]")
+ax.set_ylabel("k [W/(m K)]")
+fig1 = ax.pcolormesh(Cp, k, objectif)
 plt.colorbar(fig1, ax=ax)
 plt.show()
-prm.Cp, prm.k = stabToCpk[min(f_obj)]
 
-T = mdf_assemblage(z_, t_, prm)
-z, t = position(z_, t_, prm)
+prm.Cp = round(float(res[:, 0][np.where(res[:, 2] == np.min(res[:, 2]))]), 4)
+prm.k = round(float(res[:, 1][np.where(res[:, 2] == np.min(res[:, 2]))]), 4)
+
+print(f"Pour l'objectif atteint avec {round(float(res[:, 2][np.where(res[:, 2] == np.min(res[:, 2]))])*100, 5)} % d'erreur, on peu utiliser un Cp de {prm.Cp} et un k de {prm.k}")
+
+# # Graphique de la température simulé à 3 min avec nouveau nz, dt, Cp et k --------------------------------------------
+
+z, t = position(prm)
+T = mdf_assemblage(prm)
+plt.plot(prm.hz, prm.T[1], ".r")
+plt.title(f"Température de la pâte à 3 minutes (Cp = {prm.Cp}, k = {prm.k}, dt = {prm.dt}, nz = {prm.Nz})")
+plt.xlabel("hauteur z [m]")
+plt.ylabel("Température [K]")
+plt.plot(z[:, 0], T[:, -1])
+plt.legend(["Valeur expérimentale", "Simulation"])
+plt.show()
+
+
+# # Graphique de la température simulé color map avec nouveau nz, dt, Cp et k ------------------------------------------
+
 fig,ax = plt.subplots(nrows=1, ncols=1)
-ax.set_title("Profile de Température en Kelvin")
-ax.set_xlabel("Temps (sec)")
-ax.set_ylabel("Position en z (m)")
+ax.set_title(f"Profil de Température en Kelvin (Cp = {prm.Cp}, k = {prm.k}, dt = {prm.dt}, nz = {prm.Nz})")
+ax.set_xlabel("Temps [sec]")
+ax.set_ylabel("Position en z [m]")
 fig1 = ax.pcolormesh(t, z, T)
 plt.colorbar(fig1, ax=ax)
 plt.show()
+
+print("done")
