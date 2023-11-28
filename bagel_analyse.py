@@ -1,6 +1,7 @@
 #%% Importation des modules --------------------------------------------------------------------------------------------
 
 import numpy as np
+from scipy.interpolate import interp1d
 import matplotlib.pyplot as plt
 try:
     from bagel_fct import *
@@ -191,3 +192,38 @@ ax.set_ylabel("Position en z [m]")
 fig1 = ax.pcolormesh(t, z, T)
 plt.colorbar(fig1, ax=ax)
 plt.show()
+
+#%% Vérification interpolation scipy -----------------------------------------------------------------------------------
+prm = Parametre()
+
+f = interp1d(prm.hz, prm.T[0], kind='quadratic')
+print(prm.z)
+xnew = np.arange(prm.z[1], prm.z[0], 0.001)
+ynew = f(xnew)   # use interpolation function returned by `interp1d`
+plt.plot(prm.hz, prm.T[0], 'o', xnew, ynew, '-')
+plt.title("Interpolation de la température à 1 minute")
+plt.xlabel("Position en z [m]")
+plt.ylabel("Température [K]")
+plt.legend(["Valeurs expérimentales", "Interpolation"])
+plt.show()
+
+# %% Comparaison des interpolation -------------------------------------------------------------------------------------
+
+prm = Parametre()
+
+z, t = position(prm)
+T_1min = interpolation_quad(z[:, 0], prm.T[0], prm)
+plt.plot(prm.hz, prm.T[0], ".r")
+plt.plot(z[:, 0], T_1min)
+
+f = interp1d(prm.hz, prm.T[0], kind='quadratic')
+print(prm.z)
+xnew = np.arange(prm.z[1], prm.z[0], 0.001)
+ynew = f(xnew)   # use interpolation function returned by `interp1d`
+plt.plot(xnew, ynew, '--')
+plt.title("Interpolation de la température à 1 minute")
+plt.xlabel("Position en z [m]")
+plt.ylabel("Température [K]")
+plt.legend(["Valeurs expérimentales", "Interpolation quadratique", "interpolation de scipy"])
+plt.show()
+# %%

@@ -40,11 +40,11 @@ def position(prm):
 
 
 def interpolation_quad(z, T, prm):
-    """ Fonction qui calcul la valeur de température en un
+    """ Fonction qui calcul la valeur de température en un ou plusieurs
     point selon une interpolation quadratique
 
     Entrées:
-        - z : [m] point de calcul de la température
+        - z : [m] points de calcul de la température
         - T : [K] températures des points aux alentours
         - prm : 
             H [m] Hauteur de la pâte
@@ -119,7 +119,7 @@ def mdf_assemblage(prm):
             A[i][i] = 1 + (2 * dt * k)/(dz**2 * rho * Cp)
             A[i][i+1] = -(dt * k)/(dz**2 * rho * Cp)
             
-            b[i] = T[:, j-1][i]
+            b[i] = T[:, j-1][i] * (dt * k)/(dz**2 * rho * Cp)
         
         A[0][0] = 2*h*dz/k - 3
         A[0][1] = 4
