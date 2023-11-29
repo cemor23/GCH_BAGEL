@@ -83,7 +83,7 @@ plt.show()
 #%% Stabilité (Trouver nz et dt)----------------------------------------------------------------------------------------
 
 stab_crit = 0.001
-detail = 50
+detail = 100
 prm.Nz = 100
 prm.dt = 0.01
 erreur = np.array([])
@@ -119,24 +119,24 @@ ax.set_ylim(0.01)
 ax.set_xlim(0.01)
 plt.show()
 
-erreur = erreur.reshape(detail-1,detail-1).transpose()
-nz_arr = nz_arr.reshape(detail-1, detail-1).transpose()
-dt_arr = dt_arr.reshape(detail-1, detail-1).transpose()
-ax = plt.figure().add_subplot(111, projection='3d')
-ax.plot_surface(nz_arr, dt_arr, erreur*100, alpha=0.7)
-ax.set_yscale("symlog")
-ax.set_xscale("symlog")
-ax.set_title(f"Stabilité de la simulation (Cp = {prm.Cp}, k = {prm.k})")
-ax.set_xlabel("Nombre de points en z (nz)")
-ax.set_ylabel("Pas de temps (dt) [sec]")
-ax.set_zlabel("Stabilité [%]")
-ax.set_ylim(0.01)
-ax.set_xlim(0.01)
-plt.show()
+#erreur = erreur.reshape(detail-1,detail-1).transpose()
+#nz_arr = nz_arr.reshape(detail-1, detail-1).transpose()
+#dt_arr = dt_arr.reshape(detail-1, detail-1).transpose()
+#ax = plt.figure().add_subplot(111, projection='3d')
+#ax.plot_surface(nz_arr, dt_arr, erreur*100, alpha=0.7)
+#ax.set_yscale("symlog")
+#ax.set_xscale("symlog")
+#ax.set_title(f"Stabilité de la simulation (Cp = {prm.Cp}, k = {prm.k})")
+#ax.set_xlabel("Nombre de points en z (nz)")
+#ax.set_ylabel("Pas de temps (dt) [sec]")
+#ax.set_zlabel("Stabilité [%]")
+#ax.set_ylim(0.01)
+#ax.set_xlim(0.01)
+#plt.show()
 
 erreur_crit = erreur[np.less(erreur, stab_crit)]
-prm.Nz = int(nz_arr[np.where(erreur == erreur_crit[np.abs(erreur_crit - erreur_crit.mean()).argmin()])])
-prm.dt = int(dt_arr[np.where(erreur == erreur_crit[np.abs(erreur_crit - erreur_crit.mean()).argmin()])])
+prm.Nz = int(nz_arr[np.where(erreur == erreur_crit[np.abs(erreur_crit - erreur_crit.mean()).argmin()])][0])
+prm.dt = int(dt_arr[np.where(erreur == erreur_crit[np.abs(erreur_crit - erreur_crit.mean()).argmin()])][0])
 
 print(f"Pour une stabilité à {round(erreur_crit[np.abs(erreur_crit - erreur_crit.mean()).argmin()]*100, 5)} %, on peu utiliser un nz de {prm.Nz} et un pas dt de {prm.dt}")
 
@@ -157,7 +157,7 @@ for i in Cp:
 res = res.reshape(len(Cp)*len(k), 3)
 objectif = res[:, 2].reshape(len(Cp),len(k)).transpose()
 fig,ax = plt.subplots(nrows=1, ncols=1)
-ax.set_title("Profil de la fonction-objectif")
+ax.set_title(f"Profil de la fonction-objectif (Nz = {prm.Nz}, dt = {prm.dt})")
 ax.set_xlabel("Cp [J/(kg K)]")
 ax.set_ylabel("k [W/(m K)]")
 fig1 = ax.pcolormesh(Cp, k, objectif)
@@ -191,20 +191,6 @@ ax.set_xlabel("Temps [sec]")
 ax.set_ylabel("Position en z [m]")
 fig1 = ax.pcolormesh(t, z, T)
 plt.colorbar(fig1, ax=ax)
-plt.show()
-
-#%% Vérification interpolation scipy -----------------------------------------------------------------------------------
-prm = Parametre()
-
-f = interp1d(prm.hz, prm.T[0], kind='quadratic')
-print(prm.z)
-xnew = np.arange(prm.z[1], prm.z[0], 0.001)
-ynew = f(xnew)   # use interpolation function returned by `interp1d`
-plt.plot(prm.hz, prm.T[0], 'o', xnew, ynew, '-')
-plt.title("Interpolation de la température à 1 minute")
-plt.xlabel("Position en z [m]")
-plt.ylabel("Température [K]")
-plt.legend(["Valeurs expérimentales", "Interpolation"])
 plt.show()
 
 # %% Comparaison des interpolation -------------------------------------------------------------------------------------
