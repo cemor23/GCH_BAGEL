@@ -68,6 +68,7 @@ plt.plot(z[:, 0], T[:, -1])
 plt.legend(["Valeur expérimentale", "Simulation"])
 plt.show()
 
+print(f"la fonction-objectif est respecté à {round(f_obj(T, prm)*100,2)}%")
 
 #%% Graphique de la température simulé color map -----------------------------------------------------------------------
 
