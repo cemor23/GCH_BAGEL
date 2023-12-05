@@ -94,7 +94,7 @@ dt_arr = np.array([])
 #%%
 
 T_ref = mdf_assemblage(prm)
-
+f_obj_ref = f_obj(T_ref, prm)
 #%%
 
 for Nz in np.linspace(3, 100, detail)[:-1]:
@@ -102,7 +102,8 @@ for Nz in np.linspace(3, 100, detail)[:-1]:
         prm.Nz = int(Nz)
         prm.dt = dt
         T = mdf_assemblage(prm)
-        erreur = np.append(erreur, (np.abs((T[:, -1][0] - T_ref[:, -1][0]) / (T_ref[:, -1][0] - 273.15))))
+        f_obj_tmp = f_obj(T, prm)
+        erreur = np.append(erreur, (np.abs((f_obj_tmp - f_obj_ref) / f_obj_ref)))
         nz_arr = np.append(nz_arr, int(Nz))
         dt_arr = np.append(dt_arr, dt)
 
